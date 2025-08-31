@@ -1,6 +1,6 @@
 import { Response } from 'express'
 import { customAlphabet } from 'nanoid'
-import { findOne, updateOne } from '../../DB/db.service'
+
 import { IUser } from '../../DB/models/models.dto'
 import UserModels from '../../DB/models/User.model'
 import { providerEnum } from '../enums'
@@ -9,7 +9,8 @@ import { AppError, BadError } from '../response/error.response'
 import { successResponse } from '../response/success.response'
 import { generateHash } from '../security/hash.security'
 import { log } from 'console'
-
+import { UserRepository } from '../../DB/repository/user.repository'
+const UserModel = new UserRepository(UserModels)
 export const newConfirmOtp = async ({
   email = '',
   subject = 'Confirm-Email',
@@ -19,8 +20,8 @@ export const newConfirmOtp = async ({
   subject?: string
   res: Response
 }) => {
-  const user: IUser | null = await findOne({
-    model: UserModels,
+  const user: IUser | null = await UserModel.findOne({
+
     filter: {
       email,
       provider: providerEnum.system,
@@ -50,8 +51,8 @@ export const newConfirmOtp = async ({
 
   const hashOto = await generateHash({ plainText: otp })
 
-  await updateOne({
-    model: UserModels,
+  await UserModel. updateOne({
+
     filter: { email },
     data: {
       confirmEmailOtp: hashOto,
@@ -80,8 +81,8 @@ export const newOtpPassword = async ({
   subject?: string
   res: Response
 }) => {
-  const user = await findOne({
-    model: UserModels,
+  const user = await UserModel.findOne({
+ 
     filter: {
       email,
       provider: providerEnum.system,
@@ -117,8 +118,8 @@ export const newOtpPassword = async ({
 log(otp);
   const hashOto = await generateHash({ plainText: otp })
 
-  await updateOne({
-    model: UserModels,
+  await UserModel.updateOne({
+   
     filter: { email },
     data: {
       confirmPasswordOtp: hashOto,
@@ -139,54 +140,3 @@ log(otp);
   return successResponse({ res })
 }
 
-// export const newConfirmOtp = async ({email="" ,subject="Confirm-Email",next  ,res}:{email:string ,subject: string ,next:NextFunction  ,res :Response} ) => {
-//   const   user = await findOne({ model:UserModels , filter:{email,provider: providerEnum.system,confirmEmail:{$exists:false},confirmEmailOtp:{$exists:true}, }})
-//     if (!user) {
-//         return next(new Error("In-valid account",{cause: 404}))
-//     }
-//           if (user.otpExpired as > new Date())  {
-//     return    next(new Error(`wait is not expired , expireDate : ${user.otpExpired.toLocaleTimeString()}`,{cause: 401}))
-//   }
-//       if (user.otpAttempts.bannedUntil > new Date()) {
-//     return next( new Error(`You are temporarily banned until ${user.otpAttempts.bannedUntil.toLocaleTimeString()}`))
-//   }
-
-//     const otp = customAlphabet("0123456789",6)()
-
-//     const hashOto = await generateHash({plainText : otp })
-
-// await updateOne({model:UserModels,filter:{email},data:{confirmEmailOtp :hashOto ,otpExpired:new Date(Date.now()+2 * 60 * 1000),otpAttempts:{ count:user.otpAttempts.count+ 1 >= 5?0:user.otpAttempts.count+1,bannedUntil:user.otpAttempts.count+ 1 >= 5?new Date( new Date().getTime() + 5 * 60 * 1000):null}}})
-
-//   sendEmail({to:email ,subject:subject ,html:await emailTemplate(otp), res ,next})
-//   // console.log(otp);
-//   // console.log(hashOto);
-//     return successResponse({res})
-
-// }
-// export const newOtpPassword = async ({email="" ,subject="Confirm-Password",next ,res}={} ) => {
-//   const   user = await findOne({ model:UserModels , filter:{email,provider: providerEnum.system,confirmEmail:{$exists:true},deletedAt:{$exists:false} }})
-//     if (!user) {
-//         return next(new Error("In-valid account",{cause: 404}))
-//     }
-//     if (user.confirmEmailOtp) {
-//         return next(new Error("In-valid login data or provider or email not confirmed",{cause: 404}))
-//     }
-//           if (user.otpExpired> new Date()) {
-//     return    next(new Error(`wait is not expired , expireDate : ${user.otpExpired.toLocaleTimeString()}`,{cause: 401}))
-//   }
-//       if (user.otpAttempts.bannedUntil > new Date()) {
-//     return next( new Error(`You are temporarily banned until ${user.otpAttempts.bannedUntil.toLocaleTimeString()}`))
-//   }
-
-//     const otp = customAlphabet("0123456789",6)()
-
-//     const hashOto = await generateHash({plainText : otp })
-
-// await updateOne({model:UserModels,filter:{email},data:{confirmPasswordOtp :hashOto ,otpExpired:new Date(Date.now()+2 * 60 * 1000),otpAttempts:{ count:user.otpAttempts.count+ 1 >= 5?0:user.otpAttempts.count+1,bannedUntil:user.otpAttempts.count+ 1 >= 5?new Date( new Date().getTime() + 5 * 60 * 1000):null}}})
-
-//   sendEmail({to:email ,subject:subject ,html:await emailTemplate(otp), res ,next})
-//   // console.log(otp);
-//   // console.log(hashOto);
-//     return successResponse({res})
-
-// }

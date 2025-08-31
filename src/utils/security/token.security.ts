@@ -1,12 +1,15 @@
-import { NextFunction } from 'express'
+import { Request } from 'express'
 import jwt from 'jsonwebtoken'
+import mongoose from 'mongoose'
 import { nanoid } from 'nanoid'
-import { findById } from '../../DB/db.service.js'
-import { IUser } from '../../DB/models/models.dto.js'
+import { IToken, IUser } from '../../DB/models/models.dto.js'
+import TokenModels from '../../DB/models/Token.model.js'
 import UserModels from '../../DB/models/User.model.js'
-import { roleEnum } from '../enums.js'
+import { DatabaseRepository } from '../../DB/repository/database.repository.js'
+import { roleEnum, signatureTypeEnum, tokenTypeEnum } from '../enums.js'
 import { BadError } from '../response/error.response.js'
-
+const UserModel = new DatabaseRepository<IUser>(UserModels)
+const TokenModel = new DatabaseRepository<IToken>(TokenModels)
 export const generateToken = async ({
   payload = '',
   signature = process.env.ACCESS_TOKEN_USER_SIGNATURE,
@@ -21,22 +24,26 @@ export const verifyToken = async ({
   return jwt.verify(token, signature as string)
 }
 export const getSignature = async ({
-  signatureLevel = signatureTypeEnum.Bearer,
-}: { signatureLevel?: SignatureType } = {}) => {
+  signatureLevel = signatureTypeEnum.bearer,
+}: { signatureLevel?: signatureTypeEnum } = {}) => {
   const signature: {
     accessSignature?: string
     refreshSignature?: string
   } = {}
 
   switch (signatureLevel) {
-    case signatureTypeEnum.System:
-      signature.accessSignature = process.env.ACCESS_TOKEN_SYSTEM_SIGNATURE as string
-      signature.refreshSignature = process.env.REFRESH_TOKEN_SYSTEM_SIGNATURE as string
+    case signatureTypeEnum.system:
+      signature.accessSignature = process.env
+        .ACCESS_TOKEN_SYSTEM_SIGNATURE as string
+      signature.refreshSignature = process.env
+        .REFRESH_TOKEN_SYSTEM_SIGNATURE as string
       break
 
     default:
-      signature.accessSignature = process.env.ACCESS_TOKEN_USER_SIGNATURE as string
-      signature.refreshSignature = process.env.REFRESH_TOKEN_USER_SIGNATURE as string
+      signature.accessSignature = process.env
+        .ACCESS_TOKEN_USER_SIGNATURE as string
+      signature.refreshSignature = process.env
+        .REFRESH_TOKEN_USER_SIGNATURE as string
       break
   }
 
@@ -48,27 +55,26 @@ export interface IDecoded extends jwt.JwtPayload {
   _id?: string
 }
 
-export const tokenTypeEnum = {
-  access: 'access',
-  refresh: 'refresh',
-} as const
+// export const tokenTypeEnum = {
+//   access: 'access',
+//   refresh: 'refresh',
+// } as const
 
-export const signatureTypeEnum = {
-  Bearer: 'Bearer',
-  System: 'System',
-} as const
+// export const signatureTypeEnum = {
+//   Bearer: 'Bearer',
+//   System: 'System',
+// } as const
 
-type TokenType = keyof typeof tokenTypeEnum
-type SignatureType = keyof typeof signatureTypeEnum
+// type TokenType = keyof typeof tokenTypeEnum
+// type SignatureType = keyof typeof signatureTypeEnum
 
 export const decodedToken = async ({
   authorization = '',
-  next,
+
   tokenType = tokenTypeEnum.access,
 }: {
   authorization?: string
-  next: NextFunction
-  tokenType?: TokenType
+  tokenType?: tokenTypeEnum
 }) => {
   const [bearer, token] = authorization?.split(' ') || []
 
@@ -81,7 +87,7 @@ export const decodedToken = async ({
   }
 
   const signature = await getSignature({
-    signatureLevel: bearer as SignatureType,
+    signatureLevel: bearer as signatureTypeEnum,
   })
 
   const decoded = (await verifyToken({
@@ -92,11 +98,17 @@ export const decodedToken = async ({
         : signature.refreshSignature,
   })) as IDecoded
 
+  if (
+    decoded.jti &&
+    (await TokenModel.findOne({ filter: { jti: decoded.jti } }))
+  ) {
+    throw new BadError('In-valid login credentials ')
+  }
   if (!decoded?._id) {
-    return next(new Error('In-valid token'))
+    throw new BadError('In-valid token')
   }
 
-  const user: any = await findById({ model: UserModels, id: decoded._id })
+  const user: any = await UserModel.findById({ id: decoded._id })
   if (!user) {
     throw new BadError('Not register account')
   }
@@ -111,24 +123,47 @@ export const decodedToken = async ({
   return { user, decoded }
 }
 
-export async function generateLoginToken(user: IUser)  {
+export async function generateLoginToken(user: IUser) {
   const signature = await getSignature({
     signatureLevel:
       user.role != roleEnum.User
-        ? signatureTypeEnum.System
-        : signatureTypeEnum.Bearer,
+        ? signatureTypeEnum.system
+        : signatureTypeEnum.bearer,
   })
   const jwtid = nanoid()
   const access_token = await generateToken({
     payload: { _id: user?._id } as { _id: string } as any,
     signature: signature.accessSignature,
-    option: { expiresIn: Number(process.env.ACCESS_EXPIRES), jwtid }as {expiresIn: number; jwtid: string},
+    option: { expiresIn: Number(process.env.ACCESS_EXPIRES), jwtid } as {
+      expiresIn: number
+      jwtid: string
+    },
   })
   const refresh_token = await generateToken({
-    payload: { _id: user?._id }as any,
+    payload: { _id: user?._id } as any,
     signature: signature.refreshSignature,
-    option: { expiresIn: Number(process.env.REFRESH_EXPIRES), jwtid }as {expiresIn: number; jwtid: string},
+    option: { expiresIn: Number(process.env.REFRESH_EXPIRES), jwtid } as {
+      expiresIn: number
+      jwtid: string
+    },
   })
   return { access_token, refresh_token }
 }
 
+export async function createRevokeToken({
+  req,
+}: {
+  req: Request
+}): Promise<boolean> {
+  await TokenModel.create({
+    data: [
+      {
+        jti: req.decoded?.jti as string,
+        userId: new mongoose.Types.ObjectId(req.decoded?._id as string),
+        expiresIn:
+          (req.decoded?.iat as number) + Number(process.env.REFRESH_EXPIRES),
+      },
+    ],
+  })
+  return true
+}

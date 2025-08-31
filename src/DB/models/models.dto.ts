@@ -1,12 +1,16 @@
 import mongoose from "mongoose"
 import type { Document } from "mongoose"
+import { genderEnum, providerEnum, roleEnum } from "../../utils/enums"
+
+
+
 
 export interface IUser extends Document {
   firstName: string
   lastName: string
   email: string
   password?: string
-  provider: string
+  provider: providerEnum
   phone?: string
   confirmEmailOtp?: string
   otpExpired?: Date
@@ -22,8 +26,8 @@ export interface IUser extends Document {
     public_id?: string
     secure_url?: string
   }[]
-  gender: string
-  role: string
+  gender: genderEnum
+  role: roleEnum
   confirmEmail?: Date
   deletedAt?: Date
   freezeBy?: mongoose.Types.ObjectId
@@ -33,4 +37,14 @@ export interface IUser extends Document {
   changeCredentialsTime?: Date
   confirmPasswordOtp?: string
   fullName: string
+}
+
+
+
+
+export interface IToken extends Document {
+  jti: string
+  expiresIn: number
+  userId?: mongoose.Types.ObjectId
+
 }

@@ -82,7 +82,7 @@ userSchema
 
 
 
-const UserModels = mongoose.model<IUser>('User', userSchema)
+const UserModels =  mongoose.models.User || mongoose.model<IUser>('User', userSchema)
 
 UserModels.syncIndexes()
 

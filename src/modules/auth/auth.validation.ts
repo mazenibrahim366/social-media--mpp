@@ -37,3 +37,51 @@ export const newConfirmEmail =  {
   
     })
 }
+
+export const signupByGmail = {
+  body: z
+    .strictObject({
+      idToken: z.string().min(1, 'idToken is required'),
+
+    })
+
+}
+
+
+export const loginByGmail = {
+  body: z
+    .strictObject({
+    idToken: z.string().min(1, 'idToken is required'),
+
+    })
+
+}
+export const updatePassword = {
+  body: z
+    .strictObject({
+    email:generalFields.email,
+otp: generalFields.otp,
+password: generalFields.password,
+confirmPassword: generalFields.confirmPassword,
+
+
+
+    })
+
+}
+export const verifyForgotPassword = {
+  body: z
+    .strictObject({
+   email: generalFields.email,
+      otp: generalFields.otp,
+    })
+
+}
+export const confirmPasswordOtp = {
+  body: z
+    .strictObject({
+    email: generalFields.email,
+
+    })
+
+}

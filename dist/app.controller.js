@@ -11,6 +11,7 @@ const helmet_1 = __importDefault(require("helmet"));
 const node_path_1 = require("node:path");
 const connection_db_1 = __importDefault(require("./DB/connection.db"));
 const auth_controller_1 = __importDefault(require("./modules/auth/auth.controller"));
+const user_controller_1 = __importDefault(require("./modules/user/user.controller"));
 const error_response_1 = require("./utils/response/error.response");
 (0, dotenv_1.config)({ path: (0, node_path_1.resolve)('./config/.env.development') });
 const bootstrap = async () => {
@@ -33,6 +34,7 @@ const bootstrap = async () => {
         message: `welcome to ${process.env.APPLICATION_NAME} backend landing page `,
     }));
     app.use('/auth', auth_controller_1.default);
+    app.use('/users', user_controller_1.default);
     app.use(error_response_1.globalErrorHandling);
     app.all('{/*dummy}', (req, res) => res.status(404).json({ message: 'In-valid app router' }));
     app.listen(port, () => console.log(`Server is running on port => ${port}!`));

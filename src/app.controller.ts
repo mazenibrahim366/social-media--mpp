@@ -7,6 +7,7 @@ import helmet from 'helmet'
 import { resolve } from 'node:path'
 import ConnectionDB from './DB/connection.db'
 import authController from './modules/auth/auth.controller'
+import userController from './modules/user/user.controller'
 import { globalErrorHandling } from './utils/response/error.response'
 config({ path: resolve('./config/.env.development') })
 
@@ -43,6 +44,7 @@ const bootstrap = async () => {
   )
   //sup app router modules
   app.use('/auth', authController)
+  app.use('/users', userController)
   app.use(globalErrorHandling)
   app.all('{/*dummy}', (req, res) =>
     res.status(404).json({ message: 'In-valid app router' })

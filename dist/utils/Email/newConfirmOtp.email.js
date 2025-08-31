@@ -5,7 +5,6 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.newOtpPassword = exports.newConfirmOtp = void 0;
 const nanoid_1 = require("nanoid");
-const db_service_1 = require("../../DB/db.service");
 const User_model_1 = __importDefault(require("../../DB/models/User.model"));
 const enums_1 = require("../enums");
 const email_events_1 = require("../Events/email.events");
@@ -13,9 +12,10 @@ const error_response_1 = require("../response/error.response");
 const success_response_1 = require("../response/success.response");
 const hash_security_1 = require("../security/hash.security");
 const console_1 = require("console");
+const user_repository_1 = require("../../DB/repository/user.repository");
+const UserModel = new user_repository_1.UserRepository(User_model_1.default);
 const newConfirmOtp = async ({ email = '', subject = 'Confirm-Email', res, }) => {
-    const user = await (0, db_service_1.findOne)({
-        model: User_model_1.default,
+    const user = await UserModel.findOne({
         filter: {
             email,
             provider: enums_1.providerEnum.system,
@@ -35,8 +35,7 @@ const newConfirmOtp = async ({ email = '', subject = 'Confirm-Email', res, }) =>
     }
     const otp = (0, nanoid_1.customAlphabet)('0123456789', 6)();
     const hashOto = await (0, hash_security_1.generateHash)({ plainText: otp });
-    await (0, db_service_1.updateOne)({
-        model: User_model_1.default,
+    await UserModel.updateOne({
         filter: { email },
         data: {
             confirmEmailOtp: hashOto,
@@ -55,8 +54,7 @@ const newConfirmOtp = async ({ email = '', subject = 'Confirm-Email', res, }) =>
 };
 exports.newConfirmOtp = newConfirmOtp;
 const newOtpPassword = async ({ email = '', subject = 'Confirm-Password', res, }) => {
-    const user = await (0, db_service_1.findOne)({
-        model: User_model_1.default,
+    const user = await UserModel.findOne({
         filter: {
             email,
             provider: enums_1.providerEnum.system,
@@ -80,8 +78,7 @@ const newOtpPassword = async ({ email = '', subject = 'Confirm-Password', res, }
     const otp = (0, nanoid_1.customAlphabet)('0123456789', 6)();
     (0, console_1.log)(otp);
     const hashOto = await (0, hash_security_1.generateHash)({ plainText: otp });
-    await (0, db_service_1.updateOne)({
-        model: User_model_1.default,
+    await UserModel.updateOne({
         filter: { email },
         data: {
             confirmPasswordOtp: hashOto,

@@ -78,6 +78,6 @@ userSchema
     .get(function () {
     return this.firstName + ' ' + this.lastName;
 });
-const UserModels = mongoose_1.default.model('User', userSchema);
+const UserModels = mongoose_1.default.models.User || mongoose_1.default.model('User', userSchema);
 UserModels.syncIndexes();
 exports.default = UserModels;

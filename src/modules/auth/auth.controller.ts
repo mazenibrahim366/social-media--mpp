@@ -19,4 +19,11 @@ router.patch(
   authService.newConfirmEmail
 )
 
+router.post("/login/gmail",validation(validators.loginByGmail),authService.loginByGmail)
+router.post("/signup/gmail",validation(validators.signupByGmail),authService.signupByGmail)
+
+router.patch("/forgotPassword",validation(validators.updatePassword),authService.forgotPassword )
+router.patch("/verifyForgotPassword",validation(validators.verifyForgotPassword),authService.verifyForgotPassword )
+router.patch("/newConfirmPasswordOtp",validation(validators.confirmPasswordOtp),authService.newConfirmPassword )
+
 export default router

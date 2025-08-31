@@ -1,15 +1,10 @@
 
 import { NextFunction, Request, Response } from "express"
-import { decodedToken, IDecoded, tokenTypeEnum} from "../utils/security/token.security.js"
+import { decodedToken, IDecoded} from "../utils/security/token.security.js"
 import { IUser } from "../DB/models/models.dto.js"
-  declare  global{
-  namespace Express {
-    interface Request {
-      decoded?: IDecoded
-      user?: IUser
-    }
-  }
-}
+import { roleEnum, tokenTypeEnum } from "../utils/enums.js"
+import { AppError } from "../utils/response/error.response.js"
+
 
 
 export const authentication = ({ tokenType = tokenTypeEnum.access } = {}) => {
@@ -18,7 +13,7 @@ export const authentication = ({ tokenType = tokenTypeEnum.access } = {}) => {
 	if (!authorization) {
 	  return next(new Error("Authorization header missing"));
 	}
-	const result = await decodedToken({ authorization, next, tokenType });
+	const result = await decodedToken({ authorization, tokenType });
 	if (!result) {
 	  return next(new Error("Invalid token"));
 	}
@@ -30,12 +25,13 @@ export const authentication = ({ tokenType = tokenTypeEnum.access } = {}) => {
 }
 
 
-// export const authorization =(accessRoles=[] ) => {
-// return asyncHandler(async(req ,res,next)=>{
-// if (!accessRoles.includes(req.user.role)) {
-//        return next(new Error("Not authorized account",{cause:403}))
-// }
+export const authorization = (accessRoles: roleEnum[] = []) => {
+  return async (req: Request, res: Response, next: NextFunction) => {
 
-//    return next()
-// })
-// }
+	if (!accessRoles.includes(req.user?.role as roleEnum)) {
+	  throw new AppError("Not authorized account", 403);
+	}
+
+	return next();
+  };
+}
